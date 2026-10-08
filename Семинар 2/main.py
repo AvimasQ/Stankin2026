@@ -1,42 +1,43 @@
-import re
-def get_sku(text: str, sku_expression:str = r"(\d{4}-[A-Z]{2})|([A-Z]{2}-\d{4}(-[A-Z]{3})?)") -> list(str|None):
-    '''
-    Выделяет артикулы заказов из текста.
-    Формат артикула по-умолчанию: 1234-AB или BC-5678 или DE-1234-ABC
+def status(signal: float) -> str:
+    """
+    Выводит показания датчика и статус отслеживаемой коровы.
 
     Args:
-        text: Текст, в котором нужно найти артикулы.
-        sku_expression: Регулярное выражение для поиска артикула.
+        signal (float): выходной сигнал с датчика (диапазон 4-20 мА).
 
     Returns:
-        Список артикулов (str) или None (если в строке совпадений нет).
+        string: показания датчика и статус отслеживаемой коровы.
 
     Raises:
-        TypeError: text или sku_expression не являются строками.
-        ValueError: sku_expression не является корректным регулярным выражением.
-    '''
-    skus = []
-    if type(text) != str:
-        raise TypeError
+        TypeError: неверный тип signal
+        ValueError: signal не является положительным
+    """
+    if type(signal) != float:
+        raise TypeError("Неверный тип сигнала")
+    if signal < 0:
+        raise ValueError("Отрицательное значение сигнала")
+    result = f"Показания датчика {signal}мА,"
+    if 0<signal<=3.9 or signal >= 20.1:
+        return str(result + " датчик неисправен.")
+    if signal == 0:
+        return str(result + " датчик отключен.")
 
-    if type(sku_expression) != str:
-        raise TypeError
+    current_temperature = (signal - 4)*(75)/(20-4)
+    result += f" датчик исправен. Температура {current_temperature:.1f}°C."
 
-    if type(sku_expression) != str:
-        raise TypeError
+    if current_temperature > 50:
+        return str(result + " Корова жива?")
+    if current_temperature > 39.6:
+        return str(result + " Корова больна.")
+    if current_temperature > 39.1:
+        return str(result + " Корова перегрелась.")
+    if current_temperature > 37.5:
+        return str(result + " Корова в норме.")
+    if current_temperature > 35:
+        return str(result + " Корова замерзла.")
+    else:
+        return str(result + " Отвалился датчик или корова.")
 
-    try:
-        re.compile(sku_expression)
-    except re.error as error:
-        raise ValueError(f"Некорректрое регулярное выражение: {error}") from error
 
-    lines = text.splitlines()
-    for line in lines:
-        skus.append(re.search(sku_expression, line)[0] if re.search(sku_expression, line) else None)
-    return skus
-
-
-
-a = open("file.txt","r").read()
-for sku in get_sku(a):
-    print(sku)
+for i in range(1,220):
+    print(status(i/10))
